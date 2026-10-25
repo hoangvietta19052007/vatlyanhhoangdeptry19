@@ -1,0 +1,1583 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ Thống Mô Phỏng & Quản Lý Bài Tập Vật Lý 10</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- MathJax 3 -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            svg: { fontCache: 'global' }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+        .tab-btn.active {
+            border-bottom: 3px solid #2563eb;
+            color: #2563eb;
+            font-weight: 600;
+        }
+        canvas { touch-action: none; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col selection:bg-blue-500 selection:text-white">
+
+    <!-- Header / Navbar -->
+    <header class="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center space-x-3 cursor-pointer" onclick="switchView('student')">
+                    <div class="bg-blue-600 text-white p-2 rounded-xl shadow-sm">
+                        <i class="fa-solid fa-atom text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-lg text-slate-900 leading-tight">Vật Lý 10: CĐTBĐD</h1>
+                        <p class="text-xs text-slate-500">Mô phỏng & Quản Lý Bài Tập Trực Tuyến</p>
+                    </div>
+                </div>
+
+                <!-- Navigation Tabs (Dynamic Student vs Teacher) -->
+                <nav id="student-nav" class="flex space-x-1 sm:space-x-2 h-full">
+                    <button onclick="switchTab('tab-single')" id="btn-tab-single" class="tab-btn active px-3 flex items-center gap-2 text-sm text-slate-600 hover:text-blue-600 transition">
+                        <i class="fa-solid fa-car-side"></i>
+                        <span class="hidden md:inline">Mô Phỏng 1 Vật</span>
+                    </button>
+                    <button onclick="switchTab('tab-two')" id="btn-tab-two" class="tab-btn px-3 flex items-center gap-2 text-sm text-slate-600 hover:text-blue-600 transition">
+                        <i class="fa-solid fa-cars"></i>
+                        <span class="hidden md:inline">Bài Tập 2 Vật</span>
+                    </button>
+                    <button onclick="switchTab('tab-formulas')" id="btn-tab-formulas" class="tab-btn px-3 flex items-center gap-2 text-sm text-slate-600 hover:text-blue-600 transition">
+                        <i class="fa-solid fa-book-bookmark"></i>
+                        <span class="hidden md:inline">Công Thức SGK</span>
+                    </button>
+                    <button onclick="switchTab('tab-homework')" id="btn-tab-homework" class="tab-btn px-3 flex items-center gap-2 text-sm text-slate-600 hover:text-blue-600 transition">
+                        <i class="fa-solid fa-paper-plane text-indigo-600"></i>
+                        <span class="hidden md:inline">Nộp Bài Tập</span>
+                    </button>
+                    <button onclick="openTeacherAuthModal()" class="px-3 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-xl my-3 flex items-center gap-1.5 transition border">
+                        <i class="fa-solid fa-user-shield text-blue-600"></i>
+                        <span class="hidden sm:inline">Giáo Viên</span>
+                    </button>
+                </nav>
+
+                <!-- Teacher Active Mode Badge -->
+                <div id="teacher-nav" class="hidden flex items-center gap-3">
+                    <span class="px-3 py-1 rounded-full bg-indigo-100 text-indigo-800 text-xs font-semibold flex items-center gap-1.5 border border-indigo-200">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        Giao Diện Quản Lý (Giáo Viên)
+                    </span>
+                    <button onclick="openChangePinModal()" class="text-xs bg-amber-50 hover:bg-amber-100 text-amber-700 px-3 py-1.5 rounded-lg border border-amber-200 font-medium transition flex items-center gap-1">
+                        <i class="fa-solid fa-key text-amber-600"></i> Đổi Mã PIN
+                    </button>
+                    <button onclick="switchView('student')" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded-lg border font-medium transition">
+                        <i class="fa-solid fa-arrow-right-from-bracket"></i> Thoát
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-grow max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-6">
+
+        <!-- ================= GIAO DIỆN HỌC SINH ================= -->
+        <div id="view-student" class="space-y-6">
+            
+            <!-- TAB 1: MÔ PHỎNG 1 VẬT -->
+            <section id="tab-single" class="tab-content space-y-6">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Control Panel -->
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-5">
+                        <h2 class="font-semibold text-slate-800 text-lg flex items-center gap-2 border-b pb-3">
+                            <i class="fa-solid fa-sliders text-blue-600"></i> Thông Số Ban Đầu
+                        </h2>
+
+                        <div class="space-y-4">
+                            <div>
+                                <div class="flex justify-between text-sm mb-1">
+                                    <label class="font-medium text-slate-700">Vị trí ban đầu ($x_0$):</label>
+                                    <span id="val-x0" class="font-semibold text-blue-600">0 m</span>
+                                </div>
+                                <input type="range" id="input-x0" min="-50" max="50" value="0" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
+                            </div>
+
+                            <div>
+                                <div class="flex justify-between text-sm mb-1">
+                                    <label class="font-medium text-slate-700">Vận tốc ban đầu ($v_0$):</label>
+                                    <span id="val-v0" class="font-semibold text-blue-600">5 m/s</span>
+                                </div>
+                                <input type="range" id="input-v0" min="-20" max="20" value="5" step="0.5" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
+                            </div>
+
+                            <div>
+                                <div class="flex justify-between text-sm mb-1">
+                                    <label class="font-medium text-slate-700">Gia tốc ($a$):</label>
+                                    <span id="val-a" class="font-semibold text-blue-600">2 m/s²</span>
+                                </div>
+                                <input type="range" id="input-a" min="-5" max="5" value="2" step="0.2" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
+                            </div>
+                        </div>
+
+                        <div id="motion-type-badge" class="p-3 rounded-xl bg-blue-50 border border-blue-200 text-blue-800 text-xs font-medium text-center">
+                            Chuyển động nhanh dần đều theo chiều dương
+                        </div>
+
+                        <div class="flex gap-2 pt-2">
+                            <button id="btn-start" onclick="togglePlaySingle()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl font-medium shadow-sm transition flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-play" id="icon-play"></i> <span id="text-play">Bắt đầu</span>
+                            </button>
+                            <button onclick="resetSingle()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2.5 rounded-xl font-medium transition flex items-center justify-center">
+                                <i class="fa-solid fa-rotate-left"></i>
+                            </button>
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-2 pt-3 border-t text-center">
+                            <div class="bg-slate-50 p-2 rounded-lg border">
+                                <span class="block text-[10px] text-slate-400 font-bold uppercase">Thời gian ($t$)</span>
+                                <span id="live-t" class="font-mono text-base font-bold text-slate-700">0.0s</span>
+                            </div>
+                            <div class="bg-slate-50 p-2 rounded-lg border">
+                                <span class="block text-[10px] text-slate-400 font-bold uppercase">Vị trí ($x$)</span>
+                                <span id="live-x" class="font-mono text-base font-bold text-blue-600">0.0m</span>
+                            </div>
+                            <div class="bg-slate-50 p-2 rounded-lg border">
+                                <span class="block text-[10px] text-slate-400 font-bold uppercase">Vận tốc ($v$)</span>
+                                <span id="live-v" class="font-mono text-base font-bold text-emerald-600">5.0m/s</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Visualizer & Charts -->
+                    <div class="lg:col-span-2 space-y-6">
+                        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
+                            <div class="flex justify-between items-center mb-2">
+                                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Đường Trục Tọa Độ (Ox)</h3>
+                                <span class="text-xs text-slate-500">Tỷ lệ: $1\text{m} = 5\text{px}$</span>
+                            </div>
+                            <div class="relative h-36 bg-slate-100 rounded-xl overflow-hidden border border-slate-200">
+                                <canvas id="canvas-single" class="w-full h-full"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                            <div class="flex justify-between items-center border-b pb-2">
+                                <h3 class="font-semibold text-slate-800 text-sm">Đồ Thị Theo Thời Gian</h3>
+                                <div class="flex gap-2">
+                                    <button onclick="setGraphType('x')" id="btn-graph-x" class="px-2.5 py-1 text-xs rounded-lg font-medium bg-blue-600 text-white">$x - t$</button>
+                                    <button onclick="setGraphType('v')" id="btn-graph-v" class="px-2.5 py-1 text-xs rounded-lg font-medium bg-slate-100 text-slate-600">$v - t$</button>
+                                    <button onclick="setGraphType('a')" id="btn-graph-a" class="px-2.5 py-1 text-xs rounded-lg font-medium bg-slate-100 text-slate-600">$a - t$</button>
+                                </div>
+                            </div>
+                            <div class="h-60 relative">
+                                <canvas id="chart-single"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 2: BÀI TẬP 2 VẬT -->
+            <section id="tab-two" class="tab-content hidden space-y-6">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-5">
+                        <h2 class="font-semibold text-slate-800 text-lg border-b pb-3 flex items-center gap-2">
+                            <i class="fa-solid fa-list-check text-blue-600"></i> Dạng Bài Tập SGK
+                        </h2>
+
+                        <div class="space-y-2">
+                            <button onclick="loadPreset(1)" id="preset-1" class="preset-btn w-full text-left p-3 rounded-xl border border-blue-500 bg-blue-50/50 hover:bg-blue-50 transition">
+                                <div class="font-semibold text-sm text-blue-900">Dạng 1: Hai xe đi ngược chiều</div>
+                                <div class="text-xs text-slate-500 mt-1">Xe A đi nhanh dần đều, xe B đi thẳng đều.</div>
+                            </button>
+                            <button onclick="loadPreset(2)" id="preset-2" class="preset-btn w-full text-left p-3 rounded-xl border border-slate-200 hover:bg-slate-50 transition">
+                                <div class="font-semibold text-sm text-slate-800">Dạng 2: Xe sau đuổi xe trước</div>
+                                <div class="text-xs text-slate-500 mt-1">Xe 1 tăng tốc đuổi xe 2 đang đi đều.</div>
+                            </button>
+                            <button onclick="loadPreset(3)" id="preset-3" class="preset-btn w-full text-left p-3 rounded-xl border border-slate-200 hover:bg-slate-50 transition">
+                                <div class="font-semibold text-sm text-slate-800">Dạng 3: Hãm phanh tránh va chạm</div>
+                                <div class="text-xs text-slate-500 mt-1">Xe 1 phát hiện vật cản hãm phanh chậm dần đều.</div>
+                            </button>
+                        </div>
+
+                        <div class="space-y-3 pt-2 border-t text-xs">
+                            <div class="font-semibold text-slate-700 text-sm">Cấu hình chi tiết:</div>
+                            <div class="p-2.5 bg-blue-50/60 rounded-xl border border-blue-100 space-y-2">
+                                <span class="font-bold text-blue-700 block">Vật A (Xanh)</span>
+                                <div class="grid grid-cols-3 gap-1">
+                                    <div>$x_{0A}$: <input type="number" id="two-x0A" class="w-full border rounded p-1 text-center" value="0"></div>
+                                    <div>$v_{0A}$: <input type="number" id="two-v0A" class="w-full border rounded p-1 text-center" value="0"></div>
+                                    <div>$a_A$: <input type="number" id="two-aA" class="w-full border rounded p-1 text-center" value="1"></div>
+                                </div>
+                            </div>
+                            <div class="p-2.5 bg-rose-50/60 rounded-xl border border-rose-100 space-y-2">
+                                <span class="font-bold text-rose-700 block">Vật B (Đỏ)</span>
+                                <div class="grid grid-cols-3 gap-1">
+                                    <div>$x_{0B}$: <input type="number" id="two-x0B" class="w-full border rounded p-1 text-center" value="100"></div>
+                                    <div>$v_{0B}$: <input type="number" id="two-v0B" class="w-full border rounded p-1 text-center" value="-10"></div>
+                                    <div>$a_B$: <input type="number" id="two-aB" class="w-full border rounded p-1 text-center" value="0"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex gap-2">
+                            <button onclick="togglePlayTwo()" id="btn-play-two" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl font-medium shadow-sm transition flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-play" id="icon-play-two"></i> <span id="text-play-two">Chạy mô phỏng</span>
+                            </button>
+                            <button onclick="resetTwo()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2.5 rounded-xl font-medium transition">
+                                <i class="fa-solid fa-rotate-left"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="lg:col-span-2 space-y-6">
+                        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-2">
+                            <div class="flex justify-between items-center">
+                                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Mô phỏng đường thẳng</h3>
+                                <span id="two-timer" class="font-mono text-sm font-bold text-blue-600">$t = 0.0\text{s}$</span>
+                            </div>
+                            <div class="relative h-44 bg-slate-100 rounded-xl overflow-hidden border border-slate-200">
+                                <canvas id="canvas-two" class="w-full h-full"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                            <h3 class="font-semibold text-slate-800 border-b pb-2 flex items-center gap-2">
+                                <i class="fa-solid fa-calculator text-emerald-600"></i> Lời Giải Chi Tiết Tự Động
+                            </h3>
+                            <div id="solution-box" class="space-y-3 text-sm text-slate-700"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 3: CÔNG THỨC SGK -->
+            <section id="tab-formulas" class="tab-content hidden space-y-6">
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                    <h2 class="text-2xl font-bold text-slate-900 mb-4">Tóm Tắt Công Thức Vật Lý 10</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="border border-slate-200 rounded-2xl p-5 bg-slate-50/50 space-y-3">
+                            <h3 class="font-bold text-slate-800 text-base border-b pb-2">1. Gia Tốc & Vận Tốc</h3>
+                            <div class="bg-white p-3 rounded-xl border">
+                                <span class="font-semibold block mb-1 text-sm">Gia tốc trung bình:</span>
+                                $$a = \frac{v - v_0}{t - t_0} = \frac{\Delta v}{\Delta t}$$
+                            </div>
+                            <div class="bg-white p-3 rounded-xl border">
+                                <span class="font-semibold block mb-1 text-sm">Vận tốc tức thời:</span>
+                                $$v = v_0 + a \cdot t$$
+                            </div>
+                        </div>
+
+                        <div class="border border-slate-200 rounded-2xl p-5 bg-slate-50/50 space-y-3">
+                            <h3 class="font-bold text-slate-800 text-base border-b pb-2">2. Quãng Đường & Tọa Độ</h3>
+                            <div class="bg-white p-3 rounded-xl border">
+                                <span class="font-semibold block mb-1 text-sm">Quãng đường đi được ($s$):</span>
+                                $$s = v_0 t + \frac{1}{2}a t^2$$
+                            </div>
+                            <div class="bg-white p-3 rounded-xl border">
+                                <span class="font-semibold block mb-1 text-sm">Phương trình tọa độ ($x$):</span>
+                                $$x = x_0 + v_0 t + \frac{1}{2}a t^2$$
+                            </div>
+                        </div>
+
+                        <div class="border border-slate-200 rounded-2xl p-5 bg-slate-50/50 space-y-3">
+                            <h3 class="font-bold text-slate-800 text-base border-b pb-2">3. Công Thức Độc Lập Thời Gian</h3>
+                            <div class="bg-white p-4 rounded-xl border">
+                                $$v^2 - v_0^2 = 2 \cdot a \cdot s$$
+                            </div>
+                        </div>
+
+                        <div class="border border-slate-200 rounded-2xl p-5 bg-slate-50/50 space-y-3">
+                            <h3 class="font-bold text-slate-800 text-base border-b pb-2">4. Quy Ước Dấu CĐTBĐD</h3>
+                            <div class="bg-white p-3 rounded-xl border text-xs space-y-1.5 text-slate-700">
+                                <p>• <strong>Nhanh dần đều (NDĐ):</strong> $a$ và $v$ cùng dấu ($a \cdot v > 0$)</p>
+                                <p>• <strong>Chậm dần đều (CDĐ):</strong> $a$ và $v$ trái dấu ($a \cdot v < 0$)</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 4: BÀI TẬP & NỘP BÀI TẬP -->
+            <section id="tab-homework" class="tab-content hidden space-y-6">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    
+                    <!-- Danh sách bài tập -->
+                    <div class="lg:col-span-7 space-y-4">
+                        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                            <div class="flex items-center justify-between border-b pb-3">
+                                <h2 class="font-bold text-slate-900 text-lg flex items-center gap-2">
+                                    <i class="fa-solid fa-list-ol text-blue-600"></i> Danh Sách 10 Bài Tập Tự Luyện SGK
+                                </h2>
+                            </div>
+
+                            <!-- Bài tập 1-10 -->
+                            <div class="space-y-3 max-h-[600px] overflow-y-auto pr-2">
+                                <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1">
+                                    <div class="font-bold text-slate-800 flex justify-between">
+                                        <span>Bài 1 (Trích Đề 1):</span>
+                                        <span class="text-emerald-600 font-semibold">Dễ</span>
+                                    </div>
+                                    <p>Vật xuất phát từ $v_0 = 0$. Sau $10\text{ s}$ đầu tiên đạt tốc độ $15\text{ m/s}$.</p>
+                                    <p>a) Tính gia tốc $a$. b) Tính quãng đường $s$ trong $10\text{ s}$. *(Đáp số: $a = 1.5\text{ m/s}^2$; $s = 75\text{ m}$)*</p>
+                                </div>
+
+                                <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1">
+                                    <div class="font-bold text-slate-800 flex justify-between">
+                                        <span>Bài 2 (Trích Đề 4):</span>
+                                        <span class="text-emerald-600 font-semibold">Dễ</span>
+                                    </div>
+                                    <p>Vật từ $v_0 = 0$. Sau $5\text{ s}$ đạt vận tốc $10\text{ m/s}$. Tính gia tốc và quãng đường sau $10\text{ s}$. *(Đáp số: $a=2\text{ m/s}^2$; $s=100\text{ m}$)*</p>
+                                </div>
+
+                                <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1">
+                                    <div class="font-bold text-slate-800 flex justify-between">
+                                        <span>Bài 3 (Trích Đề 7):</span>
+                                        <span class="text-emerald-600 font-semibold">Dễ</span>
+                                    </div>
+                                    <p>Tàu chạy $36\text{ km/h}$ hãm phanh sau $5\text{ s}$ thì dừng. Tìm gia tốc và quãng đường hãm phanh. *(Đáp số: $a=-2\text{ m/s}^2$; $s=25\text{ m}$)*</p>
+                                </div>
+
+                                <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1">
+                                    <div class="font-bold text-slate-800 flex justify-between">
+                                        <span>Bài 4 (Trích Đề 9):</span>
+                                        <span class="text-blue-600 font-semibold">Vận dụng</span>
+                                    </div>
+                                    <p>Ô tô đang chạy $45\text{ km/h}$ tăng tốc. Sau $30\text{ s}$ đạt $72\text{ km/h}$. Tính gia tốc và thời điểm vận tốc đạt $64.8\text{ km/h}$. *(Đáp số: $a=0.25\text{ m/s}^2$; $t=22\text{ s}$)*</p>
+                                </div>
+
+                                <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1">
+                                    <div class="font-bold text-slate-800 flex justify-between">
+                                        <span>Bài 5 (Trích Đề 11):</span>
+                                        <span class="text-blue-600 font-semibold">Vận dụng</span>
+                                    </div>
+                                    <p>Ô tô xuống dốc nhanh dần đều từ $10\text{ m/s}$, hết dốc $100\text{ s}$ đạt $72\text{ km/h}$. Tính gia tốc và chiều dài dốc. *(Đáp số: $a=0.1\text{ m/s}^2$; $s=1500\text{ m}$)*</p>
+                                </div>
+
+                                <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1">
+                                    <div class="font-bold text-slate-800 flex justify-between">
+                                        <span>Bài 6 (Trích Đề 14):</span>
+                                        <span class="text-blue-600 font-semibold">Vận dụng</span>
+                                    </div>
+                                    <p>Xe $36\text{ km/h}$ tắt máy chậm dần đều với $|a| = 0.5\text{ m/s}^2$. Sau bao lâu xe dừng hẳn và quãng đường đi được? *(Đáp số: $t=20\text{ s}$; $s=100\text{ m}$)*</p>
+                                </div>
+
+                                <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1">
+                                    <div class="font-bold text-slate-800 flex justify-between">
+                                        <span>Bài 7 (Trích Đề 16):</span>
+                                        <span class="text-blue-600 font-semibold">Vận dụng</span>
+                                    </div>
+                                    <p>Xe đạp lên dốc $100\text{ m}$. $v$ đầu dốc là $18\text{ km/h}$ và đỉnh dốc là $1\text{ m/s}$. Tìm $a$ và thời gian lên dốc. *(Đáp số: $a=-0.12\text{ m/s}^2$; $t=33.3\text{ s}$)*</p>
+                                </div>
+
+                                <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1">
+                                    <div class="font-bold text-slate-800 flex justify-between">
+                                        <span>Bài 8 (Trích Đề 17):</span>
+                                        <span class="text-rose-600 font-semibold">Vận dụng cao</span>
+                                    </div>
+                                    <p>Xe đang chạy $20\text{ m/s}$ tắt máy đi thêm $200\text{ m}$ dừng hẳn. Tính thời gian để đi $100\text{ m}$ đầu tiên. *(Đáp số: $t=5.85\text{ s}$)*</p>
+                                </div>
+
+                                <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1">
+                                    <div class="font-bold text-slate-800 flex justify-between">
+                                        <span>Bài 9 (Trích Đề 18):</span>
+                                        <span class="text-rose-600 font-semibold">Vận dụng cao</span>
+                                    </div>
+                                    <p>Ô tô $15\text{ m/s}$ hãm phanh. Sau $125\text{ m}$ vận tốc giảm còn $10\text{ m/s}$. Tính tổng thời gian từ lúc hãm phanh đến khi dừng hẳn. *(Đáp số: $t=30\text{ s}$)*</p>
+                                </div>
+
+                                <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1">
+                                    <div class="font-bold text-slate-800 flex justify-between">
+                                        <span>Bài 10 (Nâng cao):</span>
+                                        <span class="text-rose-600 font-semibold">Vận dụng cao</span>
+                                    </div>
+                                    <p>Vật tăng tốc từ $v_0=0$ với $a_1=2\text{ m/s}^2$ trong $5\text{ s}$, sau đó hãm phanh với $a_2=-1\text{ m/s}^2$ đến khi dừng. Tính tổng quãng đường.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Form Nộp Bài Tập -->
+                    <div class="lg:col-span-5 space-y-5">
+                        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                            <div class="border-b pb-3">
+                                <h2 class="font-bold text-slate-900 text-lg flex items-center gap-2">
+                                    <i class="fa-solid fa-cloud-arrow-up text-indigo-600"></i> Cổng Nộp Bài Học Sinh
+                                </h2>
+                                <p class="text-xs text-slate-500 mt-1">Bài làm sẽ được gửi trực tiếp đến hệ thống quản lý của Giáo viên.</p>
+                            </div>
+
+                            <form id="student-upload-form" onsubmit="handleStudentSubmit(event)" class="space-y-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 mb-1">Họ và Tên học sinh <span class="text-rose-500">*</span></label>
+                                    <input type="text" id="student-name" required placeholder="Ví dụ: Nguyễn Văn An" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none">
+                                </div>
+
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 mb-1">Lớp học <span class="text-rose-500">*</span></label>
+                                    <input type="text" id="student-class" required placeholder="Ví dụ: 10A1" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none">
+                                </div>
+
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 mb-1">Chọn ảnh bài làm <span class="text-rose-500">*</span></label>
+                                    <div onclick="document.getElementById('file-input').click()" class="border-2 border-dashed border-indigo-200 hover:border-indigo-500 bg-indigo-50/30 rounded-2xl p-4 text-center cursor-pointer transition">
+                                        <i class="fa-solid fa-camera-retro text-2xl text-indigo-500 mb-1"></i>
+                                        <p class="text-xs font-medium text-slate-700">Chụp hoặc chọn ảnh bài làm</p>
+                                        <p class="text-[10px] text-slate-400 mt-0.5">Hỗ trợ chọn nhiều ảnh cùng lúc</p>
+                                    </div>
+                                    <input type="file" id="file-input" multiple accept="image/*" class="hidden" onchange="handleFileSelect(event)">
+                                </div>
+
+                                <div id="image-preview-container" class="hidden space-y-2">
+                                    <div class="flex justify-between items-center text-xs text-slate-500">
+                                        <span>Xem trước ảnh:</span>
+                                        <span id="file-count" class="font-bold text-indigo-600">0 ảnh</span>
+                                    </div>
+                                    <div id="preview-grid" class="grid grid-cols-3 gap-2 max-h-44 overflow-y-auto p-1 bg-slate-50 rounded-xl border border-slate-200"></div>
+                                </div>
+
+                                <div id="upload-status" class="hidden text-xs p-3 rounded-xl border"></div>
+
+                                <button type="submit" id="btn-submit-work" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 rounded-xl shadow transition flex items-center justify-center gap-2 text-sm">
+                                    <i class="fa-solid fa-paper-plane"></i>
+                                    <span>Gửi Bài Tập Ngay</span>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+
+        <!-- ================= GIAO DIỆN QUẢN LÝ CỦA GIÁO VIÊN ================= -->
+        <div id="view-teacher" class="hidden space-y-6">
+            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+                
+                <!-- Dashboard Top Bar -->
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-4">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-900 flex items-center gap-2">
+                            <i class="fa-solid fa-user-tie text-indigo-600"></i> Bảng Quản Lý Bài Tập Học Sinh
+                        </h2>
+                        <p class="text-xs text-slate-500 mt-0.5">Tất cả bài tập nộp từ học sinh được cập nhật theo thời gian thực.</p>
+                    </div>
+
+                    <div class="flex items-center gap-3">
+                        <select id="filter-class" onchange="filterSubmissions()" class="px-3 py-2 text-xs border rounded-xl bg-slate-50 font-medium">
+                            <option value="ALL">Tất cả các lớp</option>
+                        </select>
+                        <button onclick="fetchSubmissions()" class="px-3 py-2 text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold rounded-xl border border-indigo-200 transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-arrows-rotate"></i> Làm mới
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Submissions List Organized by Student -->
+                <div id="teacher-submissions-container" class="space-y-4">
+                    <div class="text-center py-12 text-slate-400 text-sm">
+                        <i class="fa-solid fa-spinner fa-spin text-2xl mb-2"></i>
+                        <p>Đang tải danh sách bài nộp...</p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Modal Nhập Mã PIN Giáo Viên -->
+    <div id="modal-auth" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-6 space-y-4 shadow-xl border">
+            <div class="text-center space-y-1">
+                <div class="w-12 h-12 rounded-full bg-indigo-50 text-indigo-600 mx-auto flex items-center justify-center text-xl mb-2">
+                    <i class="fa-solid fa-lock"></i>
+                </div>
+                <h3 class="font-bold text-slate-900 text-lg">Đăng Nhập Giáo Viên</h3>
+                <p class="text-xs text-slate-500">Nhập mã PIN để mở giao diện quản lý bài nộp</p>
+            </div>
+            
+            <form onsubmit="verifyTeacherPin(event)" class="space-y-4">
+                <div>
+                    <input type="password" id="pin-input" placeholder="Mã PIN" required class="w-full text-center tracking-widest text-lg font-mono p-2.5 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div id="pin-error" class="hidden text-xs text-rose-600 text-center font-medium">Mã PIN không chính xác!</div>
+                <div class="flex gap-2">
+                    <button type="button" onclick="closeTeacherAuthModal()" class="flex-1 py-2 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl">Hủy</button>
+                    <button type="submit" class="flex-1 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow">Xác Nhận</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Đổi Mã PIN Giáo Viên -->
+    <div id="modal-change-pin" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-6 space-y-4 shadow-xl border">
+            <div class="text-center space-y-1">
+                <div class="w-12 h-12 rounded-full bg-amber-50 text-amber-600 mx-auto flex items-center justify-center text-xl mb-2">
+                    <i class="fa-solid fa-key"></i>
+                </div>
+                <h3 class="font-bold text-slate-900 text-lg">Đổi Mã PIN Quản Lý</h3>
+                <p class="text-xs text-slate-500">Nhập mã PIN mới cho giao diện Giáo viên</p>
+            </div>
+            
+            <form onsubmit="handleChangePinSubmit(event)" class="space-y-3">
+                <div>
+                    <label class="block text-[11px] font-semibold text-slate-600 mb-1">Mã PIN hiện tại</label>
+                    <input type="password" id="old-pin-input" required placeholder="Nhập PIN cũ" class="w-full text-center text-sm font-mono p-2 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-[11px] font-semibold text-slate-600 mb-1">Mã PIN mới</label>
+                    <input type="password" id="new-pin-input" required placeholder="Nhập PIN mới" class="w-full text-center text-sm font-mono p-2 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div id="change-pin-msg" class="hidden text-xs text-center font-medium p-1 rounded"></div>
+                <div class="flex gap-2 pt-2">
+                    <button type="button" onclick="closeChangePinModal()" class="flex-1 py-2 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl">Hủy</button>
+                    <button type="submit" class="flex-1 py-2 text-xs font-semibold text-white bg-amber-600 hover:bg-amber-700 rounded-xl shadow">Lưu Mã PIN</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Phóng To Ảnh Bài Làm -->
+    <div id="modal-image" class="fixed inset-0 bg-slate-900/80 z-50 flex items-center justify-center hidden p-4" onclick="closeImageModal()">
+        <div class="relative max-w-4xl w-full max-h-[90vh] flex items-center justify-center">
+            <img id="modal-img-src" src="" class="max-w-full max-h-[85vh] rounded-lg object-contain">
+            <button onclick="closeImageModal()" class="absolute -top-10 right-0 text-white text-xl hover:text-slate-300">
+                <i class="fa-solid fa-xmark"></i> Đóng
+            </button>
+        </div>
+    </div>
+
+    <!-- Firebase SDK Modules -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Global App & Firebase setup
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'vatly10-mophong-app';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+            apiKey: "",
+            authDomain: `${appId}.firebaseapp.com`,
+            projectId: appId,
+            storageBucket: `${appId}.appspot.com`
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        let currentUser = null;
+        let authPromise = null;
+
+        // Auth initialization with Promise Guard
+        function ensureAuth() {
+            if (auth.currentUser) {
+                currentUser = auth.currentUser;
+                return Promise.resolve(currentUser);
+            }
+            if (!authPromise) {
+                authPromise = new Promise(async (resolve, reject) => {
+                    try {
+                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                            const cred = await signInWithCustomToken(auth, __initial_auth_token);
+                            currentUser = cred.user;
+                        } else {
+                            const cred = await signInAnonymously(auth);
+                            currentUser = cred.user;
+                        }
+                        resolve(currentUser);
+                    } catch (err) {
+                        console.error("Firebase auth error:", err);
+                        try {
+                            const cred = await signInAnonymously(auth);
+                            currentUser = cred.user;
+                            resolve(currentUser);
+                        } catch(e) {
+                            reject(e);
+                        }
+                    }
+                });
+            }
+            return authPromise;
+        }
+
+        // Initialize auth early
+        ensureAuth();
+
+        // Save submission to Cloud Firestore
+        window.saveSubmissionToCloud = async function(data) {
+            const user = await ensureAuth();
+            if (!user) {
+                throw new Error("Không thể khởi tạo đăng nhập. Vui lòng thử lại!");
+            }
+            
+            const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'homework_submissions');
+            
+            const docData = {
+                studentName: data.name,
+                studentClass: data.className,
+                images: data.images, // Array of optimized compressed base64 strings
+                submittedAt: new Date().toISOString(),
+                status: 'pending' // pending / reviewed
+            };
+
+            await addDoc(colRef, docData);
+        };
+
+        // Fetch submissions for Teacher Dashboard
+        window.fetchSubmissionsFromCloud = async function() {
+            await ensureAuth();
+
+            const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'homework_submissions');
+            const snapshot = await getDocs(colRef);
+            
+            let submissions = [];
+            snapshot.forEach(docSnap => {
+                submissions.push({
+                    id: docSnap.id,
+                    ...docSnap.data()
+                });
+            });
+
+            submissions.sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt));
+            return submissions;
+        };
+
+        // Delete submission
+        window.deleteSubmissionCloud = async function(id) {
+            await ensureAuth();
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'homework_submissions', id);
+            await deleteDoc(docRef);
+        };
+
+        // Toggle Reviewed status
+        window.toggleReviewedCloud = async function(id, currentStatus) {
+            await ensureAuth();
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'homework_submissions', id);
+            await updateDoc(docRef, {
+                status: currentStatus === 'reviewed' ? 'pending' : 'reviewed'
+            });
+        };
+    </script>
+
+    <!-- Main Application Script -->
+    <script>
+        // --- GLOBAL STATE ---
+        let currentView = sessionStorage.getItem('teacher_logged_in') === 'true' ? 'teacher' : 'student';
+        let teacherPin = localStorage.getItem('teacher_pin') || "123456";
+
+        // Tab 1 Variables
+        let isRunningSingle = false;
+        let animationFrameSingle = null;
+        let tSingle = 0;
+        let dtSingle = 0.03;
+        let chartSingle = null;
+        let activeGraphType = 'x';
+        let historySingle = { t: [], x: [], v: [], a: [] };
+
+        // Tab 2 Variables
+        let isRunningTwo = false;
+        let animationFrameTwo = null;
+        let tTwo = 0;
+        let dtTwo = 0.03;
+
+        // Homework Upload State
+        let selectedFiles = [];
+
+        window.onload = function() {
+            initSingleControls();
+            initChartSingle();
+            drawCanvasSingle();
+            loadPreset(1);
+            triggerMathJaxRender();
+
+            if (window.location.hash === '#admin' || window.location.hash === '#teacher' || currentView === 'teacher') {
+                if (sessionStorage.getItem('teacher_logged_in') === 'true') {
+                    switchView('teacher');
+                } else {
+                    openTeacherAuthModal();
+                }
+            }
+        };
+
+        function triggerMathJaxRender() {
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                window.MathJax.typesetPromise().catch(err => console.log('MathJax error:', err));
+            }
+        }
+
+        // --- VIEW SWITCHING (STUDENT vs TEACHER) ---
+        function switchView(view) {
+            currentView = view;
+            const studentView = document.getElementById('view-student');
+            const teacherView = document.getElementById('view-teacher');
+            const studentNav = document.getElementById('student-nav');
+            const teacherNav = document.getElementById('teacher-nav');
+
+            if (view === 'teacher') {
+                sessionStorage.setItem('teacher_logged_in', 'true');
+                studentView.classList.add('hidden');
+                teacherView.classList.remove('hidden');
+                studentNav.classList.add('hidden');
+                teacherNav.classList.remove('hidden');
+                fetchSubmissions();
+            } else {
+                sessionStorage.removeItem('teacher_logged_in');
+                teacherView.classList.add('hidden');
+                studentView.classList.remove('hidden');
+                teacherNav.classList.add('hidden');
+                studentNav.classList.remove('hidden');
+                triggerMathJaxRender();
+            }
+        }
+
+        function openTeacherAuthModal() {
+            document.getElementById('pin-input').value = '';
+            document.getElementById('pin-error').classList.add('hidden');
+            document.getElementById('modal-auth').classList.remove('hidden');
+        }
+
+        function closeTeacherAuthModal() {
+            document.getElementById('modal-auth').classList.add('hidden');
+        }
+
+        function verifyTeacherPin(e) {
+            e.preventDefault();
+            const pin = document.getElementById('pin-input').value;
+            if (pin === teacherPin) {
+                sessionStorage.setItem('teacher_logged_in', 'true');
+                closeTeacherAuthModal();
+                switchView('teacher');
+            } else {
+                document.getElementById('pin-error').classList.remove('hidden');
+            }
+        }
+
+        // --- CHANGE TEACHER PIN ---
+        function openChangePinModal() {
+            document.getElementById('old-pin-input').value = '';
+            document.getElementById('new-pin-input').value = '';
+            const msgEl = document.getElementById('change-pin-msg');
+            msgEl.className = "hidden text-xs text-center font-medium p-1 rounded";
+            document.getElementById('modal-change-pin').classList.remove('hidden');
+        }
+
+        function closeChangePinModal() {
+            document.getElementById('modal-change-pin').classList.add('hidden');
+        }
+
+        function handleChangePinSubmit(e) {
+            e.preventDefault();
+            const oldPin = document.getElementById('old-pin-input').value;
+            const newPin = document.getElementById('new-pin-input').value.trim();
+            const msgEl = document.getElementById('change-pin-msg');
+
+            if (oldPin !== teacherPin) {
+                msgEl.innerText = "Mã PIN cũ không chính xác!";
+                msgEl.className = "text-xs text-center font-medium p-1.5 rounded bg-rose-50 text-rose-700 block";
+                return;
+            }
+
+            if (!newPin || newPin.length < 4) {
+                msgEl.innerText = "Mã PIN mới phải từ 4 ký tự trở lên!";
+                msgEl.className = "text-xs text-center font-medium p-1.5 rounded bg-rose-50 text-rose-700 block";
+                return;
+            }
+
+            teacherPin = newPin;
+            localStorage.setItem('teacher_pin', newPin);
+            
+            msgEl.innerText = "Đã cập nhật mã PIN mới thành công!";
+            msgEl.className = "text-xs text-center font-medium p-1.5 rounded bg-emerald-50 text-emerald-700 block";
+
+            setTimeout(() => {
+                closeChangePinModal();
+            }, 1200);
+        }
+
+        // --- TAB SWITCHING (STUDENT NAVIGATION) ---
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            
+            document.getElementById(tabId).classList.remove('hidden');
+            document.getElementById('btn-' + tabId).classList.add('active');
+
+            if (tabId === 'tab-single') resetSingle();
+            else if (tabId === 'tab-two') resetTwo();
+
+            triggerMathJaxRender();
+        }
+
+        // ================= TAB 1 LOGIC =================
+        const inputX0 = document.getElementById('input-x0');
+        const inputV0 = document.getElementById('input-v0');
+        const inputA = document.getElementById('input-a');
+
+        function initSingleControls() {
+            [inputX0, inputV0, inputA].forEach(input => {
+                input.addEventListener('input', () => {
+                    updateSingleValuesDisplay();
+                    resetSingle();
+                });
+            });
+            updateSingleValuesDisplay();
+        }
+
+        function updateSingleValuesDisplay() {
+            const x0 = parseFloat(inputX0.value);
+            const v0 = parseFloat(inputV0.value);
+            const a = parseFloat(inputA.value);
+
+            document.getElementById('val-x0').innerText = x0 + ' m';
+            document.getElementById('val-v0').innerText = v0 + ' m/s';
+            document.getElementById('val-a').innerText = a + ' m/s²';
+
+            const badge = document.getElementById('motion-type-badge');
+            if (a === 0) {
+                badge.className = "p-3 rounded-xl bg-slate-100 border text-slate-800 text-xs font-medium text-center";
+                badge.innerText = "Chuyển động thẳng đều";
+            } else if ((v0 >= 0 && a > 0) || (v0 <= 0 && a < 0)) {
+                badge.className = "p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-medium text-center";
+                badge.innerText = "Chuyển động Nhanh Dần Đều (a và v cùng dấu)";
+            } else {
+                badge.className = "p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs font-medium text-center";
+                badge.innerText = "Chuyển động Chậm Dần Đều (a và v trái dấu)";
+            }
+        }
+
+        function togglePlaySingle() {
+            isRunningSingle = !isRunningSingle;
+            const btnText = document.getElementById('text-play');
+            const btnIcon = document.getElementById('icon-play');
+
+            if (isRunningSingle) {
+                btnText.innerText = "Tạm dừng";
+                btnIcon.className = "fa-solid fa-pause";
+                animateSingle();
+            } else {
+                btnText.innerText = "Tiếp tục";
+                btnIcon.className = "fa-solid fa-play";
+                cancelAnimationFrame(animationFrameSingle);
+            }
+        }
+
+        function resetSingle() {
+            isRunningSingle = false;
+            cancelAnimationFrame(animationFrameSingle);
+            tSingle = 0;
+            
+            document.getElementById('text-play').innerText = "Bắt đầu";
+            document.getElementById('icon-play').className = "fa-solid fa-play";
+
+            historySingle = { t: [0], x: [parseFloat(inputX0.value)], v: [parseFloat(inputV0.value)], a: [parseFloat(inputA.value)] };
+            updateLiveTelemetrySingle(0, parseFloat(inputX0.value), parseFloat(inputV0.value));
+            updateChartSingle();
+            drawCanvasSingle();
+        }
+
+        function updateLiveTelemetrySingle(t, x, v) {
+            document.getElementById('live-t').innerText = t.toFixed(1) + 's';
+            document.getElementById('live-x').innerText = x.toFixed(1) + 'm';
+            document.getElementById('live-v').innerText = v.toFixed(1) + 'm/s';
+        }
+
+        function animateSingle() {
+            if (!isRunningSingle) return;
+            tSingle += dtSingle;
+            const x0 = parseFloat(inputX0.value);
+            const v0 = parseFloat(inputV0.value);
+            const a = parseFloat(inputA.value);
+
+            const x = x0 + v0 * tSingle + 0.5 * a * tSingle * tSingle;
+            const v = v0 + a * tSingle;
+
+            historySingle.t.push(tSingle);
+            historySingle.x.push(x);
+            historySingle.v.push(v);
+            historySingle.a.push(a);
+
+            updateLiveTelemetrySingle(tSingle, x, v);
+            drawCanvasSingle(x);
+            updateChartSingle();
+
+            if (tSingle >= 20 || Math.abs(x) > 200) {
+                togglePlaySingle();
+                return;
+            }
+
+            animationFrameSingle = requestAnimationFrame(animateSingle);
+        }
+
+        function drawCanvasSingle(posX = parseFloat(inputX0.value)) {
+            const canvas = document.getElementById('canvas-single');
+            const ctx = canvas.getContext('2d');
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+
+            const width = canvas.width;
+            const height = canvas.height;
+            const centerY = height / 2 + 10;
+            const originX = width / 2;
+            const scale = 5;
+
+            ctx.clearRect(0, 0, width, height);
+
+            ctx.beginPath();
+            ctx.moveTo(0, centerY);
+            ctx.lineTo(width, centerY);
+            ctx.strokeStyle = '#94a3b8';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            ctx.fillStyle = '#64748b';
+            ctx.font = '10px system-ui, sans-serif';
+            ctx.textAlign = 'center';
+
+            for (let m = -100; m <= 100; m += 10) {
+                const screenX = originX + m * scale;
+                if (screenX >= 0 && screenX <= width) {
+                    ctx.beginPath();
+                    ctx.moveTo(screenX, centerY - 5);
+                    ctx.lineTo(screenX, centerY + 5);
+                    ctx.strokeStyle = '#cbd5e1';
+                    ctx.stroke();
+                    ctx.fillText(m + 'm', screenX, centerY + 20);
+                }
+            }
+
+            const carScreenX = originX + posX * scale;
+            const currentV = parseFloat(inputV0.value) + parseFloat(inputA.value) * tSingle;
+            if (Math.abs(currentV) > 0.1) {
+                const arrowLen = Math.min(Math.abs(currentV) * 3, 40) * Math.sign(currentV);
+                ctx.beginPath();
+                ctx.moveTo(carScreenX, centerY - 25);
+                ctx.lineTo(carScreenX + arrowLen, centerY - 25);
+                ctx.strokeStyle = '#10b981';
+                ctx.lineWidth = 2.5;
+                ctx.stroke();
+
+                const headLen = 6 * Math.sign(arrowLen);
+                ctx.beginPath();
+                ctx.moveTo(carScreenX + arrowLen, centerY - 25);
+                ctx.lineTo(carScreenX + arrowLen - headLen, centerY - 29);
+                ctx.lineTo(carScreenX + arrowLen - headLen, centerY - 21);
+                ctx.fillStyle = '#10b981';
+                ctx.fill();
+            }
+
+            ctx.fillStyle = '#2563eb';
+            ctx.beginPath();
+            ctx.roundRect(carScreenX - 15, centerY - 18, 30, 16, 4);
+            ctx.fill();
+
+            ctx.fillStyle = '#1e293b';
+            ctx.beginPath();
+            ctx.arc(carScreenX - 8, centerY - 2, 4, 0, Math.PI * 2);
+            ctx.arc(carScreenX + 8, centerY - 2, 4, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function initChartSingle() {
+            const ctx = document.getElementById('chart-single').getContext('2d');
+            chartSingle = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [0],
+                    datasets: [{
+                        label: 'Vị trí x (m)',
+                        data: [parseFloat(inputX0.value)],
+                        borderColor: '#2563eb',
+                        backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.2,
+                        pointRadius: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: false,
+                    scales: {
+                        x: { title: { display: true, text: 'Thời gian t (s)' }, grid: { color: '#f1f5f9' } },
+                        y: { title: { display: true, text: 'Giá trị' }, grid: { color: '#f1f5f9' } }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        function setGraphType(type) {
+            activeGraphType = type;
+            ['x', 'v', 'a'].forEach(t => {
+                document.getElementById('btn-graph-' + t).className = t === type 
+                    ? "px-2.5 py-1 text-xs rounded-lg font-medium bg-blue-600 text-white"
+                    : "px-2.5 py-1 text-xs rounded-lg font-medium bg-slate-100 text-slate-600";
+            });
+            updateChartSingle();
+        }
+
+        function updateChartSingle() {
+            if (!chartSingle) return;
+            chartSingle.data.labels = historySingle.t.map(v => v.toFixed(1));
+            
+            if (activeGraphType === 'x') {
+                chartSingle.data.datasets[0].label = 'Vị trí x (m)';
+                chartSingle.data.datasets[0].data = historySingle.x;
+                chartSingle.data.datasets[0].borderColor = '#2563eb';
+                chartSingle.data.datasets[0].backgroundColor = 'rgba(37, 99, 235, 0.1)';
+            } else if (activeGraphType === 'v') {
+                chartSingle.data.datasets[0].label = 'Vận tốc v (m/s)';
+                chartSingle.data.datasets[0].data = historySingle.v;
+                chartSingle.data.datasets[0].borderColor = '#10b981';
+                chartSingle.data.datasets[0].backgroundColor = 'rgba(16, 185, 129, 0.1)';
+            } else {
+                chartSingle.data.datasets[0].label = 'Gia tốc a (m/s²)';
+                chartSingle.data.datasets[0].data = historySingle.a;
+                chartSingle.data.datasets[0].borderColor = '#f59e0b';
+                chartSingle.data.datasets[0].backgroundColor = 'rgba(245, 158, 11, 0.1)';
+            }
+            chartSingle.update();
+        }
+
+        // ================= TAB 2 LOGIC =================
+        function loadPreset(presetId) {
+            [1, 2, 3].forEach(id => {
+                document.getElementById('preset-' + id).className = id === presetId
+                    ? "preset-btn w-full text-left p-3 rounded-xl border border-blue-500 bg-blue-50/50 hover:bg-blue-50 transition"
+                    : "preset-btn w-full text-left p-3 rounded-xl border border-slate-200 hover:bg-slate-50 transition";
+            });
+
+            if (presetId === 1) {
+                document.getElementById('two-x0A').value = 0; document.getElementById('two-v0A').value = 0; document.getElementById('two-aA').value = 1;
+                document.getElementById('two-x0B').value = 100; document.getElementById('two-v0B').value = -10; document.getElementById('two-aB').value = 0;
+            } else if (presetId === 2) {
+                document.getElementById('two-x0A').value = 0; document.getElementById('two-v0A').value = 5; document.getElementById('two-aA').value = 2;
+                document.getElementById('two-x0B').value = 40; document.getElementById('two-v0B').value = 10; document.getElementById('two-aB').value = 0;
+            } else if (presetId === 3) {
+                document.getElementById('two-x0A').value = 0; document.getElementById('two-v0A').value = 20; document.getElementById('two-aA').value = -2;
+                document.getElementById('two-x0B').value = 80; document.getElementById('two-v0B').value = 0; document.getElementById('two-aB').value = 0;
+            }
+            resetTwo();
+        }
+
+        function resetTwo() {
+            isRunningTwo = false;
+            cancelAnimationFrame(animationFrameTwo);
+            tTwo = 0;
+            document.getElementById('text-play-two').innerText = "Chạy mô phỏng";
+            document.getElementById('icon-play-two').className = "fa-solid fa-play";
+            document.getElementById('two-timer').innerText = "t = 0.0s";
+
+            calculateTheoreticalSolution();
+            drawCanvasTwo();
+        }
+
+        function togglePlayTwo() {
+            isRunningTwo = !isRunningTwo;
+            if (isRunningTwo) {
+                document.getElementById('text-play-two').innerText = "Tạm dừng";
+                document.getElementById('icon-play-two').className = "fa-solid fa-pause";
+                animateTwo();
+            } else {
+                document.getElementById('text-play-two').innerText = "Tiếp tục";
+                document.getElementById('icon-play-two').className = "fa-solid fa-play";
+                cancelAnimationFrame(animationFrameTwo);
+            }
+        }
+
+        function animateTwo() {
+            if (!isRunningTwo) return;
+            tTwo += dtTwo;
+            document.getElementById('two-timer').innerText = `t = ${tTwo.toFixed(1)}s`;
+
+            const xA = getPosition('A', tTwo);
+            const xB = getPosition('B', tTwo);
+
+            drawCanvasTwo(xA, xB);
+
+            if (Math.abs(xA - xB) < 0.5 && tTwo > 0.2) {
+                drawCanvasTwo(xA, xB, true);
+                togglePlayTwo();
+                return;
+            }
+
+            if (tTwo >= 25) {
+                togglePlayTwo();
+                return;
+            }
+
+            animationFrameTwo = requestAnimationFrame(animateTwo);
+        }
+
+        function getPosition(obj, t) {
+            const x0 = parseFloat(document.getElementById(`two-x0${obj}`).value);
+            const v0 = parseFloat(document.getElementById(`two-v0${obj}`).value);
+            const a = parseFloat(document.getElementById(`two-a${obj}`).value);
+            return x0 + v0 * t + 0.5 * a * t * t;
+        }
+
+        function drawCanvasTwo(xA = getPosition('A', 0), xB = getPosition('B', 0), isCollision = false) {
+            const canvas = document.getElementById('canvas-two');
+            const ctx = canvas.getContext('2d');
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+
+            const width = canvas.width;
+            const height = canvas.height;
+            const centerY = height / 2 + 10;
+            const originX = 60;
+            const scale = (width - 120) / 120;
+
+            ctx.clearRect(0, 0, width, height);
+
+            ctx.beginPath();
+            ctx.moveTo(20, centerY);
+            ctx.lineTo(width - 20, centerY);
+            ctx.strokeStyle = '#94a3b8';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            ctx.fillStyle = '#64748b';
+            ctx.font = '10px system-ui, sans-serif';
+            ctx.textAlign = 'center';
+            for (let m = 0; m <= 120; m += 20) {
+                const screenX = originX + m * scale;
+                ctx.beginPath();
+                ctx.moveTo(screenX, centerY - 4);
+                ctx.lineTo(screenX, centerY + 4);
+                ctx.strokeStyle = '#cbd5e1';
+                ctx.stroke();
+                ctx.fillText(m + 'm', screenX, centerY + 18);
+            }
+
+            const screenXA = originX + xA * scale;
+            ctx.fillStyle = '#2563eb';
+            ctx.beginPath();
+            ctx.roundRect(screenXA - 14, centerY - 20, 28, 14, 3);
+            ctx.fill();
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 9px system-ui, sans-serif';
+            ctx.fillText('A', screenXA, centerY - 10);
+
+            const screenXB = originX + xB * scale;
+            ctx.fillStyle = '#e11d48';
+            ctx.beginPath();
+            ctx.roundRect(screenXB - 14, centerY - 38, 28, 14, 3);
+            ctx.fill();
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 9px system-ui, sans-serif';
+            ctx.fillText('B', screenXB, centerY - 28);
+
+            if (isCollision) {
+                ctx.fillStyle = '#f59e0b';
+                ctx.beginPath();
+                ctx.arc(screenXA, centerY - 25, 18, 0, Math.PI * 2);
+                ctx.globalAlpha = 0.4;
+                ctx.fill();
+                ctx.globalAlpha = 1.0;
+                
+                ctx.fillStyle = '#dc2626';
+                ctx.font = 'bold 12px system-ui, sans-serif';
+                ctx.fillText('Gặp nhau!', screenXA, centerY - 50);
+            }
+        }
+
+        function calculateTheoreticalSolution() {
+            const x0A = parseFloat(document.getElementById('two-x0A').value);
+            const v0A = parseFloat(document.getElementById('two-v0A').value);
+            const aA = parseFloat(document.getElementById('two-aA').value);
+
+            const x0B = parseFloat(document.getElementById('two-x0B').value);
+            const v0B = parseFloat(document.getElementById('two-v0B').value);
+            const aB = parseFloat(document.getElementById('two-aB').value);
+
+            const A = 0.5 * (aA - aB);
+            const B = v0A - v0B;
+            const C = x0A - x0B;
+
+            let solutionHTML = `
+                <div class="bg-slate-50 p-3 rounded-xl border space-y-1">
+                    <span class="font-semibold text-blue-700 block">1. Phương trình chuyển động:</span>
+                    <div>$$x_A = ${x0A} ${v0A >= 0 ? '+' : ''}${v0A}t ${aA !== 0 ? `+ ${0.5*aA}t^2` : ''} \\quad (m)$$</div>
+                    <div>$$x_B = ${x0B} ${v0B >= 0 ? '+' : ''}${v0B}t ${aB !== 0 ? `+ ${0.5*aB}t^2` : ''} \\quad (m)$$</div>
+                </div>
+            `;
+
+            if (A === 0) {
+                if (B !== 0) {
+                    const tMeet = -C / B;
+                    if (tMeet >= 0) {
+                        const xMeet = x0A + v0A * tMeet + 0.5 * aA * tMeet * tMeet;
+                        solutionHTML += `
+                            <div class="bg-emerald-50 border border-emerald-200 text-emerald-900 p-3 rounded-xl space-y-1">
+                                <span class="font-bold block">2. Kết quả:</span>
+                                <div>Hai xe gặp nhau khi $x_A = x_B$:</div>
+                                <div>$$\\Rightarrow t = \\mathbf{${tMeet.toFixed(2)}\\text{ s}}$$</div>
+                                <div>Tọa độ gặp nhau: $x = \\mathbf{${xMeet.toFixed(2)}\\text{ m}}$</div>
+                            </div>
+                        `;
+                    }
+                }
+            } else {
+                const delta = B * B - 4 * A * C;
+                if (delta >= 0) {
+                    const t1 = (-B + Math.sqrt(delta)) / (2 * A);
+                    const t2 = (-B - Math.sqrt(delta)) / (2 * A);
+                    const validTimes = [t1, t2].filter(t => t >= 0).sort((a,b) => a-b);
+
+                    if (validTimes.length > 0) {
+                        const tMeet = validTimes[0];
+                        const xMeet = x0A + v0A * tMeet + 0.5 * aA * tMeet * tMeet;
+                        solutionHTML += `
+                            <div class="bg-emerald-50 border border-emerald-200 text-emerald-900 p-3 rounded-xl space-y-1">
+                                <span class="font-bold block">2. Kết quả:</span>
+                                <div>Thời điểm gặp nhau: $t = \\mathbf{${tMeet.toFixed(2)}\\text{ s}}$</div>
+                                <div>Tọa độ: $x = \\mathbf{${xMeet.toFixed(2)}\\text{ m}}$</div>
+                            </div>
+                        `;
+                    }
+                }
+            }
+
+            document.getElementById('solution-box').innerHTML = solutionHTML;
+            triggerMathJaxRender();
+        }
+
+        // ================= STUDENT HOMEWORK SUBMISSION LOGIC =================
+        function handleFileSelect(e) {
+            const files = Array.from(e.target.files);
+            if (!files.length) return;
+
+            files.forEach(file => {
+                if (file.type.startsWith('image/')) {
+                    selectedFiles.push(file);
+                }
+            });
+
+            renderImagePreviews();
+        }
+
+        function removeFile(index) {
+            selectedFiles.splice(index, 1);
+            renderImagePreviews();
+        }
+
+        function renderImagePreviews() {
+            const container = document.getElementById('image-preview-container');
+            const grid = document.getElementById('preview-grid');
+            const fileCountEl = document.getElementById('file-count');
+
+            grid.innerHTML = '';
+            if (selectedFiles.length === 0) {
+                container.classList.add('hidden');
+                return;
+            }
+
+            container.classList.remove('hidden');
+            fileCountEl.innerText = `${selectedFiles.length} ảnh`;
+
+            selectedFiles.forEach((file, idx) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const item = document.createElement('div');
+                    item.className = 'relative group aspect-square rounded-lg overflow-hidden border bg-slate-100';
+                    item.innerHTML = `
+                        <img src="${e.target.result}" class="w-full h-full object-cover">
+                        <button type="button" onclick="removeFile(${idx})" class="absolute top-1 right-1 bg-rose-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px]">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    `;
+                    grid.appendChild(item);
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // Canvas image compression for smooth cloud uploads
+        async function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                const url = URL.createObjectURL(file);
+                img.src = url;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+                    const maxDim = 800;
+                    
+                    if (width > maxDim || height > maxDim) {
+                        if (width > height) {
+                            height = Math.round((height * maxDim) / width);
+                            width = maxDim;
+                        } else {
+                            width = Math.round((width * maxDim) / height);
+                            height = maxDim;
+                        }
+                    }
+                    
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.55);
+                    URL.revokeObjectURL(url);
+                    resolve(dataUrl);
+                };
+                img.onerror = error => reject(error);
+            });
+        }
+
+        async function handleStudentSubmit(e) {
+            e.preventDefault();
+            const name = document.getElementById('student-name').value.trim();
+            const className = document.getElementById('student-class').value.trim();
+
+            if (selectedFiles.length === 0) {
+                showUploadStatus('Vui lòng chọn ít nhất 1 ảnh bài làm!', 'error');
+                return;
+            }
+
+            const btnSubmit = document.getElementById('btn-submit-work');
+            btnSubmit.disabled = true;
+            btnSubmit.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Đang nộp bài...`;
+            showUploadStatus('Đang tối ưu ảnh và nộp bài...', 'info');
+
+            try {
+                const base64Images = await Promise.all(selectedFiles.map(file => fileToBase64(file)));
+
+                if (typeof window.saveSubmissionToCloud === 'function') {
+                    await window.saveSubmissionToCloud({
+                        name: name,
+                        className: className,
+                        images: base64Images
+                    });
+                } else {
+                    // Fallback to local persistence if cloud module hasn't loaded
+                    let localSubmissions = JSON.parse(localStorage.getItem('local_submissions') || '[]');
+                    localSubmissions.push({
+                        id: 'local_' + Date.now(),
+                        studentName: name,
+                        studentClass: className,
+                        images: base64Images,
+                        submittedAt: new Date().toISOString(),
+                        status: 'pending'
+                    });
+                    localStorage.setItem('local_submissions', JSON.stringify(localSubmissions));
+                }
+
+                showUploadStatus(`✅ Nộp bài thành công! Đã gửi ${selectedFiles.length} ảnh bài làm của [${className}] ${name}.`, 'success');
+                selectedFiles = [];
+                document.getElementById('student-upload-form').reset();
+                renderImagePreviews();
+
+            } catch (err) {
+                console.error("Lỗi nộp bài:", err);
+                const errMsg = err.message || 'Đã có lỗi xảy ra khi nộp bài. Vui lòng thử lại!';
+                showUploadStatus(`❌ ${errMsg}`, 'error');
+            } finally {
+                btnSubmit.disabled = false;
+                btnSubmit.innerHTML = `<i class="fa-solid fa-paper-plane"></i> <span>Gửi Bài Tập Ngay</span>`;
+            }
+        }
+
+        function showUploadStatus(msg, type) {
+            const statusBox = document.getElementById('upload-status');
+            statusBox.classList.remove('hidden', 'bg-rose-50', 'text-rose-800', 'bg-emerald-50', 'text-emerald-800', 'bg-indigo-50', 'text-indigo-800');
+
+            if (type === 'error') statusBox.classList.add('bg-rose-50', 'text-rose-800');
+            else if (type === 'success') statusBox.classList.add('bg-emerald-50', 'text-emerald-800');
+            else statusBox.classList.add('bg-indigo-50', 'text-indigo-800');
+
+            statusBox.innerHTML = msg;
+        }
+
+        // ================= TEACHER DASHBOARD LOGIC =================
+        let loadedSubmissions = [];
+
+        async function fetchSubmissions() {
+            const container = document.getElementById('teacher-submissions-container');
+            container.innerHTML = `
+                <div class="text-center py-12 text-slate-400 text-sm">
+                    <i class="fa-solid fa-spinner fa-spin text-2xl mb-2"></i>
+                    <p>Đang đồng bộ dữ liệu bài nộp từ học sinh...</p>
+                </div>
+            `;
+
+            try {
+                if (typeof window.fetchSubmissionsFromCloud === 'function') {
+                    loadedSubmissions = await window.fetchSubmissionsFromCloud();
+                } else {
+                    loadedSubmissions = JSON.parse(localStorage.getItem('local_submissions') || '[]');
+                }
+                updateClassFilterOptions();
+                renderTeacherSubmissions(loadedSubmissions);
+            } catch (err) {
+                console.error(err);
+                container.innerHTML = `<div class="text-center py-8 text-rose-500 text-xs">Không thể tải dữ liệu bài nộp. Vui lòng bấm Làm Mới.</div>`;
+            }
+        }
+
+        function updateClassFilterOptions() {
+            const filterSelect = document.getElementById('filter-class');
+            const classes = [...new Set(loadedSubmissions.map(item => item.studentClass))];
+            
+            filterSelect.innerHTML = `<option value="ALL">Tất cả các lớp (${loadedSubmissions.length})</option>`;
+            classes.forEach(c => {
+                const count = loadedSubmissions.filter(item => item.studentClass === c).length;
+                filterSelect.innerHTML += `<option value="${c}">Lớp ${c} (${count})</option>`;
+            });
+        }
+
+        function filterSubmissions() {
+            const selectedClass = document.getElementById('filter-class').value;
+            if (selectedClass === 'ALL') {
+                renderTeacherSubmissions(loadedSubmissions);
+            } else {
+                const filtered = loadedSubmissions.filter(item => item.studentClass === selectedClass);
+                renderTeacherSubmissions(filtered);
+            }
+        }
+
+        function renderTeacherSubmissions(data) {
+            const container = document.getElementById('teacher-submissions-container');
+            container.innerHTML = '';
+
+            if (data.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                        <i class="fa-solid fa-inbox text-3xl text-slate-300 mb-2"></i>
+                        <p class="text-sm font-medium text-slate-500">Chưa có bài tập nào được nộp.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const studentMap = {};
+            data.forEach(item => {
+                const key = `${item.studentClass}_${item.studentName}`;
+                if (!studentMap[key]) {
+                    studentMap[key] = {
+                        studentName: item.studentName,
+                        studentClass: item.studentClass,
+                        submissions: []
+                    };
+                }
+                studentMap[key].submissions.push(item);
+            });
+
+            Object.values(studentMap).forEach(studentGroup => {
+                const card = document.createElement('div');
+                card.className = "bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-4 shadow-sm hover:border-slate-300 transition";
+                
+                let imagesHTML = '';
+                studentGroup.submissions.forEach(sub => {
+                    const timeStr = new Date(sub.submittedAt).toLocaleString('vi-VN');
+                    const isReviewed = sub.status === 'reviewed';
+
+                    sub.images.forEach((imgData, imgIdx) => {
+                        imagesHTML += `
+                            <div class="relative group aspect-square rounded-xl overflow-hidden border border-slate-200 bg-white shadow-xs">
+                                <img src="${imgData}" onclick="openImageModal('${imgData}')" class="w-full h-full object-cover cursor-pointer hover:scale-105 transition">
+                                <span class="absolute bottom-1 left-1 bg-slate-900/70 text-white text-[9px] px-1.5 py-0.5 rounded font-mono">
+                                    Ảnh ${imgIdx + 1}
+                                </span>
+                            </div>
+                        `;
+                    });
+
+                    imagesHTML += `
+                        <div class="col-span-full flex items-center justify-between pt-2 text-xs text-slate-500 border-t">
+                            <span class="flex items-center gap-1">
+                                <i class="fa-regular fa-clock"></i> Nộp lúc: ${timeStr}
+                            </span>
+                            <div class="flex items-center gap-2">
+                                <button onclick="toggleReviewed('${sub.id}', '${sub.status}')" class="px-2.5 py-1 rounded-lg font-medium text-[11px] transition ${isReviewed ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'}">
+                                    <i class="fa-solid ${isReviewed ? 'fa-check-circle' : 'fa-circle-dash'}"></i> ${isReviewed ? 'Đã chấm' : 'Đánh dấu đã chấm'}
+                                </button>
+                                <button onclick="deleteSubmission('${sub.id}')" class="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-lg font-medium text-[11px] transition">
+                                    <i class="fa-solid fa-trash"></i> Xóa
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                card.innerHTML = `
+                    <div class="flex items-center justify-between border-b pb-3">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-10 h-10 rounded-xl bg-indigo-600 text-white font-bold flex items-center justify-center text-sm shadow-xs">
+                                ${studentGroup.studentClass}
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-slate-900 text-base">${studentGroup.studentName}</h3>
+                                <p class="text-xs text-slate-500">Lớp: <span class="font-semibold text-slate-700">${studentGroup.studentClass}</span> • Tổng số bài nộp: ${studentGroup.submissions.length}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3 pt-1">
+                        ${imagesHTML}
+                    </div>
+                `;
+
+                container.appendChild(card);
+            });
+        }
+
+        async function toggleReviewed(id, currentStatus) {
+            if (typeof window.toggleReviewedCloud === 'function' && !id.startsWith('local_')) {
+                await window.toggleReviewedCloud(id, currentStatus);
+            } else {
+                let local = JSON.parse(localStorage.getItem('local_submissions') || '[]');
+                local = local.map(item => item.id === id ? {...item, status: currentStatus === 'reviewed' ? 'pending' : 'reviewed'} : item);
+                localStorage.setItem('local_submissions', JSON.stringify(local));
+            }
+            fetchSubmissions();
+        }
+
+        async function deleteSubmission(id) {
+            if (typeof window.deleteSubmissionCloud === 'function' && !id.startsWith('local_')) {
+                await window.deleteSubmissionCloud(id);
+            } else {
+                let local = JSON.parse(localStorage.getItem('local_submissions') || '[]');
+                local = local.filter(item => item.id !== id);
+                localStorage.setItem('local_submissions', JSON.stringify(local));
+            }
+            fetchSubmissions();
+        }
+
+        // Image Modal controls
+        function openImageModal(src) {
+            document.getElementById('modal-img-src').src = src;
+            document.getElementById('modal-image').classList.remove('hidden');
+        }
+
+        function closeImageModal() {
+            document.getElementById('modal-image').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
